@@ -52,11 +52,11 @@ def prep_text(text: str, background_color: tuple[int, int, int], **locations):
 
 
 points_text, points_rect = prep_text(f"Burger Points: {burger_points}", ORANGE, topleft=(10, 10))
-score_text, score_rect = prep_text(f"Score: {score}", ORANGE, topleft=(10, 10))
-title_text, title_rect = prep_text("Burger Dog", ORANGE, centrex=WINDOW_WIDTH // 2, Y=10)
-eaten_text, eaten_rect = prep_text(f"Burger Eaten: {burgers_eaten}", ORANGE, centrex=WINDOW_WIDTH // 2, y=50)
-lives_text, lives_rect = prep_text(f"Boost: {player_lives}", ORANGE, topright=(WINDOW_WIDTH - 10, 10))
-boost_text, boost_rect = prep_text(f"Boost: (boost_level)", ORANGE, topright=(WINDOW_WIDTH - 10, 50))
+score_text, score_rect = prep_text(f"Score: {score}", ORANGE, topleft=(10, 50))
+title_text, title_rect = prep_text("Burger Dog", ORANGE, centerx=WINDOW_WIDTH // 2, y=10)
+eaten_text, eaten_rect = prep_text(f"Burger Eaten: {burgers_eaten}", ORANGE, centerx=WINDOW_WIDTH // 2, y=50)
+lives_text, lives_rect = prep_text(f"Player Lives: {player_lives}", ORANGE, topright=(WINDOW_WIDTH - 10, 10))
+boost_text, boost_rect = prep_text(f"Boost: {boost_level}", ORANGE, topright=(WINDOW_WIDTH - 10, 50))
 game_over_text, game_over_rect = prep_text(f"FINAL SCORE: {score}", ORANGE,
                                            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
 continue_text, continue_rect = prep_text("Press any key to play again", ORANGE,
@@ -86,26 +86,26 @@ is_paused = False
 def check_quit():
     global running
     for event in pygame.event.get():
-        event.type == pygame.QUIT()
-        running = False
+        if event.type == pygame.QUIT:
+            running = False
 
 
 def move_player():
     global player_image
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] == player_rect.left > 0:
+    if keys[pygame.K_LEFT] and player_rect.left > 0:
         player_rect.x -= player_velocity
         player_image = player_image_left
 
-    if keys[pygame.K_RIGHT] == player_rect.right < WINDOW_WIDTH:
+    if keys[pygame.K_RIGHT] and player_rect.right < WINDOW_WIDTH:
         player_rect.x += player_velocity
         player_image = player_image_right
 
-    if keys[pygame.K_UP] == player_rect.top > 100:
+    if keys[pygame.K_UP] and player_rect.top > 100:
         player_rect.y -= player_velocity
         player_image = player_image_left
 
-    if keys[pygame.K_DOWN] == player_rect.bottom > WINDOW_HEIGHT:
+    if keys[pygame.K_DOWN] and player_rect.bottom < WINDOW_HEIGHT:
         player_rect.y += player_velocity
         player_image = player_image_left
 
@@ -113,21 +113,24 @@ def move_player():
 
 
 def engage_boost(keys):
-    global boost_level
+    global boost_level, player_velocity
     if keys[pygame.K_SPACE] and boost_level > 0:
+        player_velocity = PLAYER_BOOST_VELOCITY
         boost_level -= 1
     else:
         player_velocity = PLAYER_NORMAL_VELOCITY
 
 
 def move_burger():
+    global burger_points
     burger_rect.y += burger_velocity
     burger_points = int(burger_velocity * (WINDOW_HEIGHT - burger_rect.y + 100))
 
 
 def check_miss():
+    global burger_velocity, boost_level, player_lives
     if burger_rect.y > WINDOW_HEIGHT:
-        player_lives = -1
+        player_lives -= 1
         miss_sound.play()
         burger_rect.topleft = (random.randint(0, WINDOW_WIDTH - 32), -BUFFER_DISTANCE)
         burger_velocity = STARTING_BURGER_VELOCITY
@@ -140,19 +143,21 @@ def check_collisions():
     global burger_points
     global burger_velocity
     global burgers_eaten
+    global boost_level, score
     if player_rect.colliderect(burger_rect):
-        burger_points += score
-        burgers_eaten = +1
+        score += burger_points
+        burgers_eaten += 1
         bark_sound.play()
         burger_rect.topleft = (random.randint(0, WINDOW_WIDTH - 32), -BURGER_ACCELERATION)
         burger_velocity += BURGER_ACCELERATION
 
-        boost_level = +25
-        boost_level >= STARTING_BOOST_LEVEL
-        boost_level = STARTING_BOOST_LEVEL
+        boost_level += 25
+        if boost_level >= STARTING_BOOST_LEVEL:
+            boost_level = STARTING_BOOST_LEVEL
 
 
 def update_hud():
+    global points_text, score_text, eaten_text, lives_text, boost_text
     points_text = font.render("Burger Points: " + str(burger_points), True, ORANGE)
     score_text = font.render("Score: " + str(score), True, ORANGE)
     eaten_text = font.render("Burgers Eaten: " + str(burgers_eaten), True, ORANGE)
@@ -181,7 +186,7 @@ def check_game_over():
                     is_paused = False
                     running = False
 
-    pass
+
 
 
 def display_hud():
